@@ -3,12 +3,10 @@
 import React, { useActionState, useEffect } from "react"
 
 import { useState } from 'react';
-import { AdminSidebar } from "@/components/admin/sidebar";
+import { AdminSidebar } from "@/src/components/admin/sidebar";
 import { CloudUpload, Edit2, Plus, Trash2, X } from 'lucide-react';
 import Form from "next/form"
-import { DeleteProductAction, EditProductAction, GetEditProductAction, SubmitProductAction } from "@/app/actions/product-actions";
-import { productState } from "@/app/schema";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/src/components/ui/card";
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { InputGroupTextarea } from "@/components/ui/input-group";
@@ -19,60 +17,89 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectGroup, SelectItem, SelectContent, SelectLabel } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { CldUploadButton, CldImage, CldVideoPlayer } from 'next-cloudinary'
+import { productState } from "../../schema";
+import { SubmitProductAction } from "../../actions/product-actions";
 type ImageUpload = {
   name: string;
   url: string;
   resource_type: 'image' | 'video';
 };
 
-type Product = {
-  id: string;
-  name: string,
-  description: string,
-  productType: string[],
-  sizes: string[],
-  colors: string[],
-  category: string[],
-  rating: number,
-  price: number
-};
+type Product  = {
+    id?: string;
+    name: string;
+    description: string;
+    detailDescription: string;
+    productCategory: string[];
+    productTypeId: number;
+    images: string[];
+    sizes: string[];
+    colors: string[];
+    note: string;
+    price: number;
+    status: string;
+}
 
-const sizes = ["XS", "S", "M", "L", "XL", "XXL"] as const
-const colors = ["Red", "Blue", "White", "Green", "Orange", "Purple", "Brown", "Yellow", "Golden"] as const
-const categories = ["Party", "Cultural", "Baby", "Casual", "Formal"] as const
-const productType = ["Featured", "Trending", "New"] as const
+const PRODUCT_CATEGORIES = [
+  'Table',
+  'Chair',
+  'Dining Table Set',
+  'Custom Furniture',
+  'Menu Design'
+];
+
+const PRODUCT_SIZES = [
+  'XS',
+  'S',
+  'M',
+  'L',
+  'XL',
+  'XXL'
+];
+
+const PRODUCT_COLORS = [
+  'Black',
+  'White',
+  'Red',
+  'Blue',
+  'Green',
+  'Yellow',
+  'Purple',
+  'Orange',
+  'Pink',
+  'Brown',
+  'Gray',
+  'Navy',
+];
+
+const PRODUCT_TYPES = [
+  'New',
+  'Popular',
+  'Best Seller',
+  'Trending',
+  'Featured',
+  'On Sale'
+];
+
 export default function AdminProducts({ products }: { products: Product[] }) {
   const [formState, formAction, pending] = useActionState<productState, FormData>(SubmitProductAction,
     {
       values: {
         name: "",
         description: "",
+        detailDescription: "",
+        productCategory: [],
         productType: [],
-        image: [],
+        images: [],
         sizes: [],
         colors: [],
-        category: [],
-        rating: 0,
-        price: 0
+        note: "",
+        price: 0,
+        status: ""
       },
       errors: null,
       success: false
     })
-  const [editFormState, editFormAction, editPending] = useActionState<productState, FormData>(GetEditProductAction.bind(null, formState.values?.id || ""), {
-    values: {
-      name: formState.values?.name || "",
-      description: formState.values?.description || "",
-      productType: formState.values?.productType || [],
-      image: formState.values?.image || [],
-      sizes: formState.values?.sizes || [],
-      colors: formState.values?.colors || [],
-      category: formState.values?.category || [],
-      rating: formState.values?.rating || 0,
-      price: formState.values?.price || 0
-    },
-    errors: null,
-    success: false
-  })
   const router = useRouter();
   const [images, setImages] = useState<ImageUpload[]>([]);
   const [editedImages, setEditedImages] = useState<ImageUpload[]>([]);
@@ -86,7 +113,7 @@ export default function AdminProducts({ products }: { products: Product[] }) {
   function handleEditUpload(result: any) {
     const { public_id: name, secure_url: url, resource_type: resource_type } = result.info;
     if (formState.values) {
-      formState.values.image = [];
+      formState.values.images = [];
     }
     setEditedImages((prev) => [...prev, { name, url, resource_type }]);
     setError({ message: "" });
@@ -100,49 +127,49 @@ export default function AdminProducts({ products }: { products: Product[] }) {
 
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const handleEdit = async (id: string) => {
-    setEditedImages([]);
-    const response = await EditProductAction(id);
-    if (response.success && response.product) {
-      setEditOpen(true);
-      console.log(response.product.images);
-      formState.values = {
-        id: response.product.id,
-        name: response.product.name,
-        description: response.product.description,
-        productType: response.product.productType.filter((type: string): type is typeof productType[number] => (productType as readonly string[]).includes(type)),
-        image: response.product.images,
-        sizes: response.product.sizes.filter((size: string): size is typeof sizes[number] => (sizes as readonly string[]).includes(size)),
-        colors: response.product.colors,
-        category: response.product.category.filter((category: string): category is typeof categories[number] => (categories as readonly string[]).includes(category)),
-        rating: response.product.rating,
-        price: response.product.price
-      }
-    }
+//   const handleEdit = async (id: string) => {
+//     setEditedImages([]);
+//     const response = await EditProductAction(id);
+//     if (response.success && response.product) {
+//       setEditOpen(true);
+//       console.log(response.product.images);
+//       formState.values = {
+//         id: response.product.id,
+//         name: response.product.name,
+//         description: response.product.description,
+//         productType: response.product.productType.filter((type: string): type is typeof productType[number] => (productType as readonly string[]).includes(type)),
+//         image: response.product.images,
+//         sizes: response.product.sizes.filter((size: string): size is typeof sizes[number] => (sizes as readonly string[]).includes(size)),
+//         colors: response.product.colors,
+//         category: response.product.category.filter((category: string): category is typeof categories[number] => (categories as readonly string[]).includes(category)),
+//         rating: response.product.rating,
+//         price: response.product.price
+//       }
+//     }
   }
-  const handleDelete = async (id: string) => {
-    const response = DeleteProductAction(id);
-    if ((await response).success) {
-      router.refresh();
-    }
-  }
+//   const handleDelete = async (id: string) => {
+//     const response = DeleteProductAction(id);
+//     if ((await response).success) {
+//       router.refresh();
+//     }
+//   }
 
-  const anchor = useComboboxAnchor()
-  useEffect(() => {
-    if (formState?.success) {
-      toast("Your product has been created successfully!")
-      setOpen(false);
-      router.refresh();
-    }
-  }, [formState.success])
+//   const anchor = useComboboxAnchor()
+//   useEffect(() => {
+//     if (formState?.success) {
+//       toast("Your product has been created successfully!")
+//       setOpen(false);
+//       router.refresh();
+//     }
+//   }, [formState.success])
 
-  useEffect(() => {
-    if (editFormState?.success) {
-      toast("Your product has been updated successfully!")
-      setEditOpen(false);
-      router.refresh();
-    }
-  }, [editFormState.success])
+//   useEffect(() => {
+//     if (editFormState?.success) {
+//       toast("Your product has been updated successfully!")
+//       setEditOpen(false);
+//       router.refresh();
+//     }
+//   }, [editFormState.success])
 
   return (
     <div className="flex bg-background min-h-screen">
